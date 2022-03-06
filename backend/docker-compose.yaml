@@ -1,0 +1,63 @@
+# serviceは拡張するサービスの名前を指定。たとえばwebやdatabase
+services:
+  database:
+    # コンテナーを起動させるイメージを設定(image: ubuntu:18.04とか)
+    image: postgres
+    # ホスト側:コンテナ側
+    # ポートの割り当てには常に文字列として指定することを推奨（”で囲んで文字扱いにする）
+    # (ports:
+    #    - "8000:8000"  )
+    ports:
+      - "5432:5432"
+    # 再起動ポリシー（restart policy）
+    # これは Docker の停止や再起動を指示した場合に、コンテナーを自動的に起動するかどうかを制御するもの
+    # 再起動ポリシーを使えば、リンクしているコンテナーは確実に正しい順番で起動させることができる
+    # Docker ではこの再起動ポリシーを利用することが推奨されています。
+    # no これはデフォルトでどういう状況であってもコンテナーは再起動しない
+    # always コンテナはー停止時に常に再起動する。
+    # 手動で停止させた場合は、Dockerデーモン再起動時、あるいはコンテナーそのものが手動で再起動された場合のみ再起動する
+    # またon-failureポリシーでは、終了コードが on-failure エラーを表わしている場合にコンテナーが再起動する
+    # unless-stoppedは、コンテナーが（手動で、あるいは別の原因で）停止する場合を除き、常にコンテナーが再起動する
+    restart: always
+    environment:
+      # 環境変数を追加する
+      # 配列形式または辞書形式での指定が可能。ブール値true、false、yes、noを用いる場合は、クォートで囲むことで YML パーサーによって
+      # True や False に変換されてしまうのを防ぐ必要がある。
+      # 環境変数だけが記述されている場合は、Compose が起動しているマシン上にて定義されている値が設定される。
+      # これは機密情報やホスト固有の値を設定する場合に利用できる。
+      POSTGRES_USER: docker
+      POSTGRES_PASSWORD: docker
+      POSTGRES_DB: exampledb
+    # ボリュームの作成またはローカルのデータをマウント(ホスト:コンテナ)
+    # 例(
+  # パスを指定したら、Engine はボリュームを作成
+  # - /var/lib/mysql
+
+  # 絶対パスを指定しての割り当て
+  # - /opt/data:/var/lib/mysql
+
+  # ホスト上のパスを指定する時、Compose ファイルからのパスを指定
+  # - ./cache:/tmp/cache
+
+  # ユーザの相対パスを使用
+  # - ~/configs:/etc/configs/:ro
+
+  # 名前付きボリューム（Named volume）
+  # - datavolume:/var/lib/mysql
+  #   )
+    volumes:
+      - db-crypto-viz-data:/var/lib/postgresql/data
+  # オープンソースの無料で利用できるデータベース管理ツール。サーバーへのデプロイが非常に簡単になる
+  adminer:
+    image: adminer
+    restart: always
+    #　サービス間の依存関係を表わす
+    # docker-compose upは依存関係の順にサービスを起動する。 今回のでいえば  databaseのあとにadminerが起動する
+    # サービスを停止する時はadminerが先に停止しそのあとにdatabase
+    depends_on:
+      - database
+    ports:
+      - 8080:8080
+
+volumes:
+  db-crypto-viz-data:
